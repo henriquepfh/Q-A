@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#764ba2"/>
+  <title>Quiz Divertido! 🎉</title>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async></script>
+
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 12px 10px 24px;
+    }
+
+    .container {
+      background: white; border-radius: 28px;
+      padding: 28px 20px 24px; max-width: 480px; width: 100%;
+      box-shadow: 0 16px 48px rgba(0,0,0,.28); text-align: center;
+    }
+
+    /* ── CABEÇALHO GENÉRICO ── */
+    .hd-emoji  { font-size: 58px; line-height: 1; margin-bottom: 6px; }
+    .hd-title  { font-size: 28px; font-weight: 900; color: #4a2fa0; margin-bottom: 2px; }
+    .hd-sub    { font-size: 15px; color: #888; margin-bottom: 24px; }
+
+    /* ══════════════════════════════
+       TELA DE LOGIN
+    ══════════════════════════════ */
+    #loginScreen { display: block; }
+
+    /* Perfis em cache */
+    .profiles-wrap { margin-bottom: 20px; }
+    .profiles-title { font-size: 13px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+    .profiles-list  { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+    .profile-card {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      background: linear-gradient(145deg,#f5f3ff,#ede9fe);
+      border: 2px solid #c4b5fd; border-radius: 18px;
+      padding: 14px 12px; width: 104px; cursor: pointer;
+      transition: transform .12s, box-shadow .12s;
+      position: relative;
+    }
+    .profile-card:active { transform: scale(.95); }
+    .profile-card:hover  { box-shadow: 0 6px 20px rgba(100,80,200,.25); transform: translateY(-2px); }
+
+    .profile-avatar {
+      width: 54px; height: 54px; border-radius: 50%;
+      object-fit: cover; border: 3px solid #a78bfa;
+    }
+    .profile-avatar-init {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; font-size: 22px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid #a78bfa;
+    }
+    .profile-name { font-size: 13px; font-weight: 800; color: #4a2fa0; text-align: center; word-break: break-word; }
+
+    .profile-remove {
+      position: absolute; top: -7px; right: -7px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #ef4444; color: white; border: 2px solid white;
+      font-size: 13px; font-weight: 900; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; transition: opacity .15s;
+    }
+    .profile-card:hover .profile-remove { opacity: 1; }
+
+    /* Divisor */
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 20px 0 18px; color: #ccc; font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; border-top: 1px solid #e5e7eb;
+    }
+
+    /* Botão Google */
+    #googleSignInBtn { display: flex; justify-content: center; margin-bottom: 16px; }
+
+    /* Aviso de setup */
+    .setup-notice {
+      background: #fef3c7; border: 2px solid #fbbf24;
+      border-radius: 14px; padding: 14px 16px;
+      font-size: 13px; color: #78350f; text-align: left;
+      margin-top: 16px; line-height: 1.6;
+    }
+    .setup-notice strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .setup-notice ol { padding-left: 16px; }
+    .setup-notice code {
+      background: #fde68a; border-radius: 4px;
+      padding: 1px 5px; font-family: monospace; font-size: 12px;
+    }
+    #setupNotice { display: none; }   /* mostrado só se CLIENT_ID não configurado */
+
+    /* ══════════════════════════════
+       BARRA DE USUÁRIO (todas telas exceto login)
+    ══════════════════════════════ */
+    .user-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(145deg,#f5f3ff,#ede9fe);
+      border-radius: 16px; padding: 10px 14px;
+      margin-bottom: 18px;
+    }
+    .user-bar-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      object-fit: cover; border: 2px solid #a78bfa; flex-shrink: 0;
+    }
+    .user-bar-avatar-init {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; font-size: 15px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #a78bfa; flex-shrink: 0;
+    }
+    .user-bar-name { font-size: 14px; font-weight: 800; color: #4a2fa0; flex: 1; text-align: left; }
+    .btn-switch {
+      background: white; color: #7c3aed;
+      border: 2px solid #c4b5fd; border-radius: 10px;
+      padding: 6px 10px; font-size: 12px; font-weight: 800;
+      cursor: pointer; white-space: nowrap; touch-action: manipulation;
+    }
+    .btn-switch:active { background: #f5f3ff; }
+
+    /* ══════════════════════════════
+       GRADE DE TEMAS
+    ══════════════════════════════ */
+    #themeScreen { display: none; }
+    .theme-grid  { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 6px; }
+    .theme-card  {
+      border-radius: 18px; padding: 16px 6px; cursor: pointer;
+      border: 3px solid transparent;
+      transition: transform .13s, box-shadow .13s, border-color .13s;
+      user-select: none;
+    }
+    .theme-card:active { transform: scale(.94); }
+    .theme-icon { font-size: 38px; display: block; margin-bottom: 5px; }
+    .theme-name { font-size: 12px; font-weight: 800; color: #4a2fa0; }
+
+    /* ══════════════════════════════
+       LOADING
+    ══════════════════════════════ */
+    #loadingScreen { display: none; padding: 20px 0; }
+    .ld-emoji { font-size: 70px; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ld-text  { font-size: 20px; font-weight: 800; color: #4a2fa0; margin-top: 18px; }
+    .ld-sub   { font-size: 14px; color: #999; margin-top: 6px; }
+
+    /* ══════════════════════════════
+       QUIZ
+    ══════════════════════════════ */
+    #quizScreen { display: none; }
+    .prog-wrap { background: #e8edff; border-radius: 99px; height: 12px; margin-bottom: 16px; overflow: hidden; }
+    .prog-fill { height: 100%; background: linear-gradient(90deg,#667eea,#a78bfa); border-radius: 99px; transition: width .4s; }
+    .q-counter { font-size: 13px; color: #999; font-weight: 700; margin-bottom: 4px; }
+    .q-text    { font-size: 20px; font-weight: 800; color: #1a1a2e; line-height: 1.4; margin-bottom: 22px; min-height: 56px; }
+
+    .opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .opt-btn {
+      background: linear-gradient(145deg,#f0f4ff,#e8edff);
+      border: 3px solid #c4b5fd; border-radius: 16px;
+      padding: 16px 10px; font-size: 15px; font-weight: 700; color: #3b2a8f;
+      cursor: pointer; line-height: 1.3;
+      transition: transform .1s, background .18s, border-color .18s;
+      touch-action: manipulation;
+    }
+    .opt-btn:active:not(:disabled) { transform: scale(.95); }
+    .opt-btn.selected  { background: linear-gradient(145deg,#ddd6fe,#c4b5fd); border-color: #7c3aed; color: #3b0764; transform: scale(1.03); }
+    .opt-btn.correct   { background: linear-gradient(145deg,#bbf7d0,#86efac); border-color: #22c55e; color: #14532d; }
+    .opt-btn.wrong     { background: linear-gradient(145deg,#fecdd3,#fca5a5); border-color: #ef4444; color: #7f1d1d; }
+    .opt-btn:disabled  { cursor: default; transform: none; }
+
+    .quiz-bottom { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 4px; }
+    .btn-confirm {
+      flex: 1; background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; border: none; border-radius: 16px;
+      padding: 15px 10px; font-size: 17px; font-weight: 800;
+      cursor: pointer; box-shadow: 0 6px 18px rgba(100,80,200,.35);
+      touch-action: manipulation; transition: opacity .2s, transform .1s;
+    }
+    .btn-confirm:disabled { opacity: .38; cursor: default; box-shadow: none; }
+    .btn-confirm:not(:disabled):active { transform: scale(.96); }
+
+    .btn-home-quiz {
+      background: white; color: #4a2fa0;
+      border: 3px solid #c4b5fd; border-radius: 16px;
+      padding: 13px 16px; font-size: 16px; font-weight: 800;
+      cursor: pointer; touch-action: manipulation; white-space: nowrap;
+      transition: background .15s, transform .1s;
+    }
+    .btn-home-quiz:active { transform: scale(.96); background: #f5f3ff; }
+
+    .score-bar { font-size: 17px; font-weight: 800; color: #4a2fa0; margin-bottom: 12px; }
+
+    /* ══════════════════════════════
+       RESULTADO
+    ══════════════════════════════ */
+    #resultScreen { display: none; }
+    .res-emoji  { font-size: 80px; display: block; margin-bottom: 10px; }
+    .res-title  { font-size: 28px; font-weight: 900; color: #4a2fa0; margin-bottom: 4px; }
+    .res-sub    { font-size: 15px; color: #666; margin-bottom: 18px; }
+    .score-big  { font-size: 58px; font-weight: 900; color: #7c3aed; }
+    .score-lbl  { font-size: 15px; color: #999; margin-bottom: 4px; }
+    .stars-row  { font-size: 36px; letter-spacing: 4px; margin-bottom: 24px; }
+    .record-chip {
+      display: inline-block; background: #fef3c7;
+      border: 2px solid #fbbf24; border-radius: 99px;
+      font-size: 13px; font-weight: 700; color: #92400e;
+      padding: 4px 14px; margin-bottom: 12px;
+    }
+
+    .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn-p {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; border: none; border-radius: 16px;
+      padding: 15px 28px; font-size: 16px; font-weight: 800;
+      cursor: pointer; box-shadow: 0 6px 18px rgba(100,80,200,.4);
+      touch-action: manipulation;
+    }
+    .btn-p:active { transform: scale(.96); }
+    .btn-s {
+      background: white; color: #4a2fa0;
+      border: 3px solid #c4b5fd; border-radius: 16px;
+      padding: 12px 22px; font-size: 16px; font-weight: 800;
+      cursor: pointer; touch-action: manipulation;
+    }
+    .btn-s:active { transform: scale(.96); background: #f5f3ff; }
+
+    /* ── FEEDBACK ── */
+    .fb-overlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none; z-index: 999;
+    }
+    .fb-emoji { font-size: 96px; animation: pop .65s ease forwards; opacity: 0; }
+    @keyframes pop {
+      0%   { opacity:0; transform: scale(.2) rotate(-15deg); }
+      60%  { opacity:1; transform: scale(1.25) rotate(6deg); }
+      100% { opacity:1; transform: scale(1) rotate(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════════════════════
+       TELA DE LOGIN
+  ══════════════════════════════ -->
+  <div id="loginScreen">
+    <div class="hd-emoji">🎉</div>
+    <div class="hd-title">Quiz Divertido!</div>
+    <div class="hd-sub">Entre com o Google para começar</div>
+
+    <!-- Perfis já logados anteriormente -->
+    <div class="profiles-wrap" id="profilesWrap" style="display:none">
+      <div class="profiles-title">Quem vai jogar?</div>
+      <div class="profiles-list" id="profilesList"></div>
+      <div class="divider">ou entrar com outra conta</div>
+    </div>
+
+    <!-- Botão de login Google (renderizado pelo SDK) -->
+    <div id="googleSignInBtn"></div>
+
+    <!-- Aviso de configuração (exibido se CLIENT_ID não estiver configurado) -->
+    <div class="setup-notice" id="setupNotice">
+      <strong>⚙️ Configure seu Google Client ID</strong>
+      Para usar o login com Google, siga estes passos:
+      <ol>
+        <li>Abra o arquivo HTML num editor de texto</li>
+        <li>Encontre a linha <code>const GOOGLE_CLIENT_ID = ''</code></li>
+        <li>Acesse <strong>console.cloud.google.com</strong>, crie um projeto, vá em <em>APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID</em></li>
+        <li>Em <em>Authorized JavaScript origins</em>, coloque a URL onde o arquivo está hospedado</li>
+        <li>Cole o Client ID gerado no lugar de <code>''</code> no arquivo</li>
+        <li>Hospede o arquivo em HTTPS (ex: GitHub Pages, Netlify)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       TELA DE TEMAS
+  ══════════════════════════════ -->
+  <div id="themeScreen">
+    <div class="user-bar" id="userBarTheme">
+      <div id="ubtAvatar"></div>
+      <div class="user-bar-name" id="ubtName"></div>
+      <button class="btn-switch" onclick="switchUser()">↩ Trocar</button>
+    </div>
+    <div class="hd-title" style="margin-bottom:2px">Escolha um tema!</div>
+    <div class="hd-sub">8 perguntas por rodada</div>
+    <div class="theme-grid" id="themeGrid"></div>
+  </div>
+
+  <!-- ══════════════════════════════
+       CARREGANDO
+  ══════════════════════════════ -->
+  <div id="loadingScreen">
+    <div class="ld-emoji" id="ldEmoji">🌟</div>
+    <div class="ld-text">Sorteando as perguntas…</div>
+    <div class="ld-sub">Já já começa!</div>
+  </div>
+
+  <!-- ══════════════════════════════
+       QUIZ
+  ══════════════════════════════ -->
+  <div id="quizScreen">
+    <div class="user-bar" id="userBarQuiz">
+      <div id="ubqAvatar"></div>
+      <div class="user-bar-name" id="ubqName"></div>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div class="q-counter" id="qCounter">Pergunta 1 de 8</div>
+    <div class="q-text"    id="qText"></div>
+    <div class="score-bar">⭐ <span id="scoreLive">0 pontos</span></div>
+    <div class="opts-grid" id="optsGrid"></div>
+    <div class="quiz-bottom">
+      <button class="btn-home-quiz" onclick="goHome()">🏠 Início</button>
+      <button class="btn-confirm" id="btnConfirm" disabled onclick="confirmAnswer()">✔ Confirmar</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       RESULTADO
+  ══════════════════════════════ -->
+  <div id="resultScreen">
+    <div class="user-bar" id="userBarResult">
+      <div id="ubrAvatar"></div>
+      <div class="user-bar-name" id="ubrName"></div>
+      <button class="btn-switch" onclick="goHome()">🏠 Início</button>
+    </div>
+    <span class="res-emoji" id="resEmoji"></span>
+    <div class="res-title" id="resTitle"></div>
+    <div class="res-sub"   id="resSub"></div>
+    <div class="score-big" id="scoreBig"></div>
+    <div class="score-lbl" id="scoreLbl"></div>
+    <div class="stars-row" id="starsRow"></div>
+    <div id="recordChip"   style="margin-bottom:12px"></div>
+    <div class="btn-row">
+      <button class="btn-p" onclick="restartSame()">🔄 Jogar de novo!</button>
+      <button class="btn-s" onclick="goHome()">🏠 Novo tema</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   ⚙️  CONFIGURAÇÃO — cole seu Google Client ID aqui
+═══════════════════════════════════════════════════════ */
+const GOOGLE_CLIENT_ID = '715803021513-5joahbrhj3tuj5mvlno2d076m3dhmfla.apps.googleusercontent.com';
+
+/* ═══════════════════════════════════════════
+   BANCO DE PERGUNTAS
+═══════════════════════════════════════════ */
+const DB = {
+  animals: {
+    name:'Animais', icon:'🦁',
+    color:'linear-gradient(145deg,#fef9c3,#fff)',
+    qs:[
+      {q:'Qual animal tem o pescoço mais comprido do mundo?',        o:['Elefante','Girafa','Camelo','Hipopótamo'],       c:1},
+      {q:'Qual pássaro não voa e vive no gelo?',                    o:['Papagaio','Tucano','Pinguim','Coruja'],          c:2},
+      {q:'Quantas patas tem uma aranha?',                           o:['4','6','8','10'],                                c:2},
+      {q:'Qual animal é chamado de "rei da selva"?',                o:['Tigre','Leão','Urso','Lobo'],                   c:1},
+      {q:'O que a abelha produz?',                                  o:['Leite','Mel','Cera','Suco'],                    c:1},
+      {q:'Qual animal tem listras pretas e brancas?',               o:['Girafa','Leopardo','Zebra','Tapir'],             c:2},
+      {q:'Qual animal muda de cor para se camuflar?',               o:['Tigre','Panda','Camaleão','Iguana'],             c:2},
+      {q:'Qual é o maior animal do mundo?',                         o:['Elefante','Baleia-azul','Tubarão','Girafa'],     c:1},
+      {q:'Qual animal tem bolsa na barriga e pula muito?',          o:['Canguru','Coala','Guaxinim','Gambá'],            c:0},
+      {q:'Qual animal dorme pendurado de cabeça para baixo?',       o:['Coruja','Preguiça','Morcego','Macaco'],          c:2},
+      {q:'Qual animal constrói barragens nos rios?',                o:['Lontra','Castor','Nutria','Ratazana'],           c:1},
+      {q:'Quantas patas tem um inseto?',                            o:['4','6','8','10'],                               c:1},
+      {q:'Qual animal tem um chifre no nariz?',                     o:['Hipopótamo','Elefante','Rinoceronte','Búfalo'], c:2},
+      {q:'Qual ave é símbolo da paz?',                              o:['Águia','Pomba','Cisne','Gaivota'],              c:1},
+      {q:'O que o cachorro faz para mostrar alegria?',              o:['Mia','Ronrona','Abana o rabo','Bufa'],          c:2},
+    ]
+  },
+  space: {
+    name:'Espaço', icon:'🚀',
+    color:'linear-gradient(145deg,#e0e7ff,#fff)',
+    qs:[
+      {q:'Qual é o planeta mais próximo do Sol?',                   o:['Vênus','Marte','Mercúrio','Terra'],             c:2},
+      {q:'Qual planeta tem lindos anéis ao redor?',                 o:['Júpiter','Saturno','Urano','Netuno'],           c:1},
+      {q:'Quantos planetas tem o Sistema Solar?',                   o:['7','8','9','10'],                               c:1},
+      {q:'Qual é o maior planeta do Sistema Solar?',                o:['Saturno','Netuno','Júpiter','Urano'],           c:2},
+      {q:'Como se chama a nossa galáxia?',                          o:['Andrômeda','Via Láctea','Orion','Cosmos'],      c:1},
+      {q:'Qual estrela está mais perto da Terra?',                  o:['Sírius','Polaris','Sol','Vega'],                c:2},
+      {q:'De que cor é o planeta Marte?',                           o:['Azul','Amarelo','Verde','Vermelho'],            c:3},
+      {q:'Como chamamos a roupa que o astronauta usa no espaço?',   o:['Mergulho','Traje espacial','Armadura','Capa'], c:1},
+      {q:'Quantos dias a Terra leva para girar em torno do Sol?',   o:['30','180','365','24'],                         c:2},
+      {q:'O que é a Lua para a Terra?',                             o:['Um planeta','Uma estrela','Um satélite','Um asteroide'], c:2},
+      {q:'Como se chama uma pedra que cai do espaço e risca o céu?',o:['Cometa','Asteroide','Meteoro','Pulsar'],       c:2},
+      {q:'Qual planeta é chamado de "gigante azul"?',               o:['Saturno','Júpiter','Netuno','Marte'],          c:2},
+      {q:'O que os planetas fazem ao redor do Sol?',                o:['Explodem','Giram em órbita','Brilham','Apagam'],c:1},
+      {q:'Quantas horas tem um dia na Terra?',                      o:['12','18','24','48'],                           c:2},
+      {q:'Como se chama a missão que levou humanos à Lua?',         o:['Gêmeos','Apollo','Voyager','Cassini'],         c:1},
+    ]
+  },
+  nature: {
+    name:'Natureza', icon:'🌿',
+    color:'linear-gradient(145deg,#dcfce7,#fff)',
+    qs:[
+      {q:'Qual é a maior floresta do mundo?',                       o:['Sibéria','Congo','Amazônia','Borneo'],          c:2},
+      {q:'Quantas estações do ano existem?',                        o:['2','3','4','5'],                               c:2},
+      {q:'O que as plantas precisam para viver?',                   o:['Sal e açúcar','Água, sol e terra','Gelo e chuva','Só água'],c:1},
+      {q:'De onde vem a chuva?',                                    o:['Das montanhas','Das árvores','Das nuvens','Do mar diretamente'],c:2},
+      {q:'Qual é o maior oceano do mundo?',                         o:['Atlântico','Índico','Ártico','Pacífico'],      c:3},
+      {q:'O que é um vulcão?',                                      o:['Um rio de neve','Uma montanha que solta fogo','Uma caverna','Uma ilha'],c:1},
+      {q:'Qual estação do ano tem mais flores?',                    o:['Inverno','Outono','Verão','Primavera'],        c:3},
+      {q:'O que é o arco-íris?',                                    o:['Uma nuvem colorida','Cores no céu após a chuva','Luz do sol','Fumaça colorida'],c:1},
+      {q:'Como as plantas produzem seu alimento?',                  o:['Bebendo chuva','Com fotossíntese usando o sol','Comendo insetos','Absorvendo pedras'],c:1},
+      {q:'O que é um rio?',                                         o:['Um lago parado','Água que corre entre margens','Mar menor','Poço profundo'],c:1},
+      {q:'Quantas cores tem o arco-íris?',                          o:['5','6','7','8'],                               c:2},
+      {q:'O que é uma semente?',                                    o:['Uma folha seca','O início de uma nova planta','Uma flor pequena','Um fungo'],c:1},
+      {q:'Qual é a camada de ar que cobre a Terra?',                o:['Ionosfera','Atmosfera','Litosfera','Hidrosfera'],c:1},
+      {q:'O que acontece quando chove muito e o rio transborda?',   o:['Seca','Geada','Neve','Enchente'],              c:3},
+      {q:'Qual animal poliniza as flores?',                         o:['Minhoca','Abelha','Formiga','Lagartixa'],      c:1},
+    ]
+  },
+  sports: {
+    name:'Esportes', icon:'⚽',
+    color:'linear-gradient(145deg,#fce7f3,#fff)',
+    qs:[
+      {q:'Quantos jogadores tem um time de futebol em campo?',       o:['9','10','11','12'],                           c:2},
+      {q:'Qual é o esporte mais popular do Brasil?',                 o:['Vôlei','Basquete','Futebol','Tênis'],         c:2},
+      {q:'Qual esporte é jogado na piscina?',                        o:['Ciclismo','Ginástica','Natação','Tênis'],      c:2},
+      {q:'Qual esporte usa uma raquete e uma bolinha amarela?',      o:['Badminton','Tênis','Squash','Pingue-pongue'], c:1},
+      {q:'Quantos jogadores tem um time de basquete em quadra?',     o:['4','5','6','7'],                              c:1},
+      {q:'Em que esporte se usa patins no gelo?',                    o:['Hóquei no campo','Patinação artística','Surfe','Rúgbi'],c:1},
+      {q:'Quantas pessoas jogam vôlei em cada time na quadra?',      o:['4','5','6','7'],                              c:2},
+      {q:'Qual esporte usa um capacete e uma bicicleta?',            o:['Motocross','Ciclismo','Triátlon','Corrida'],  c:1},
+      {q:'Como se chama o juiz do futebol?',                         o:['Técnico','Árbitro','Capitão','Goleiro'],      c:1},
+      {q:'Onde acontecem os Jogos Olímpicos?',                       o:['Sempre em Roma','Sempre nos EUA','Em países diferentes a cada 4 anos','No Brasil todo ano'],c:2},
+      {q:'Qual esporte usa luvas e soco no adversário?',             o:['Judô','Caratê','Boxe','Luta livre'],          c:2},
+      {q:'Em qual esporte o Brasil é mais famoso no mundo?',         o:['Natação','Tênis','Futebol','Ginástica'],      c:2},
+      {q:'O que o árbitro usa para apitar a falta?',                 o:['Buzina','Apito','Sino','Corneta'],            c:1},
+      {q:'Qual esporte de raquete usa peteca?',                      o:['Tênis','Squash','Badminton','Raquetebol'],    c:2},
+      {q:'Quantos tempos tem uma partida de futebol?',               o:['1','2','3','4'],                              c:1},
+    ]
+  },
+  food: {
+    name:'Comidas', icon:'🍕',
+    color:'linear-gradient(145deg,#ffedd5,#fff)',
+    qs:[
+      {q:'Qual fruta é vermelha e tem sementinhas por fora?',        o:['Framboesa','Cereja','Morango','Romã'],         c:2},
+      {q:'De onde vem o leite que tomamos?',                         o:['Galinha','Vaca','Cabra','Todas acima'],       c:3},
+      {q:'Qual é a fruta verde por fora e vermelha por dentro?',     o:['Melão','Kiwi','Melancia','Abacate'],          c:2},
+      {q:'O que se faz com cacau?',                                  o:['Queijo','Iogurte','Chocolate','Manteiga'],    c:2},
+      {q:'Qual legume é laranja, comprido e que os coelhos adoram?', o:['Beterraba','Cenoura','Batata','Rabanete'],    c:1},
+      {q:'De onde vem o mel?',                                       o:['Vespa','Abelha','Mariposa','Formiga'],        c:1},
+      {q:'Qual é a fruta com espinhos por fora e doce por dentro?',  o:['Caju','Goiaba','Abacaxi','Manga'],            c:2},
+      {q:'O que é um sanduíche?',                                    o:['Sopa com pão','Pão com recheio','Bolo salgado','Massa com queijo'],c:1},
+      {q:'Qual fruta é amarela e curvada?',                          o:['Maçã','Pera','Banana','Pêssego'],            c:2},
+      {q:'O que se planta para colher arroz?',                       o:['Sementes de trigo','Grãos de arroz','Milho','Feijão'],c:1},
+      {q:'Qual prato é típico do Brasil, feito com feijão preto?',   o:['Paella','Feijoada','Carbonara','Cozido'],     c:1},
+      {q:'O que é pizza?',                                           o:['Massa com recheio assada','Sopa italiana','Pão doce','Bolo salgado'],c:0},
+      {q:'Qual fruta tropical é amarela, doce e cheira muito bem?',  o:['Lichia','Manga','Carambola','Pitanga'],       c:1},
+      {q:'O que são macarrão e espaguete?',                          o:['Tipos de pão','Tipos de massa','Tipos de arroz','Tipos de sopa'],c:1},
+      {q:'De que é feito o pão?',                                    o:['Arroz e água','Farinha, água e fermento','Milho e manteiga','Batata e sal'],c:1},
+    ]
+  },
+  numbers: {
+    name:'Números', icon:'🔢',
+    color:'linear-gradient(145deg,#f0fdf4,#fff)',
+    qs:[
+      {q:'Quanto é 2 + 2?',                        o:['3','4','5','6'],         c:1},
+      {q:'Quantos dedos tem uma mão?',              o:['4','5','6','10'],        c:1},
+      {q:'Quanto é 10 - 3?',                       o:['6','7','8','9'],         c:1},
+      {q:'Qual é o número que vem depois do 9?',   o:['8','10','11','20'],      c:1},
+      {q:'Quanto é 3 × 3?',                        o:['6','8','9','12'],        c:2},
+      {q:'Quantas horas tem um dia inteiro?',       o:['12','18','24','36'],     c:2},
+      {q:'Quanto é 5 + 5?',                        o:['9','10','11','15'],      c:1},
+      {q:'Quantos dias tem uma semana?',            o:['5','6','7','8'],         c:2},
+      {q:'Quanto é 4 × 2?',                        o:['6','7','8','10'],        c:2},
+      {q:'Quantos meses tem um ano?',               o:['10','11','12','13'],     c:2},
+      {q:'Quanto é 15 - 5?',                       o:['8','9','10','11'],       c:2},
+      {q:'Qual desses é um número par?',            o:['1','3','4','7'],         c:2},
+      {q:'Quanto é 6 + 4?',                        o:['9','10','11','12'],      c:1},
+      {q:'Quantas patas tem uma mesa com 4 pernas?',o:['2','3','4','6'],        c:2},
+      {q:'Quanto é 2 × 5?',                        o:['7','8','9','10'],        c:3},
+    ]
+  },
+  dinosaurs: {
+    name:'Dinossauros', icon:'🦕',
+    color:'linear-gradient(145deg,#fdf2f8,#fff)',
+    qs:[
+      {q:'Qual é o dinossauro carnívoro mais famoso?',               o:['Braquiossauro','T-Rex','Triceratops','Estegossauro'], c:1},
+      {q:'O que o Braquiossauro comia?',                             o:['Carne','Peixes','Plantas','Insetos'],                 c:2},
+      {q:'Qual dinossauro tinha três chifres na cabeça?',            o:['Anquilossauro','Pterodáctilo','Triceratops','Espinossauro'],c:2},
+      {q:'De onde nasciam os filhotes de dinossauro?',               o:['Barriga da mãe','Ovos','Bolsa','Toca'],              c:1},
+      {q:'Qual dinossauro tinha uma grande vela nas costas?',        o:['Estegossauro','Espinossauro','T-Rex','Iguanodonte'], c:1},
+      {q:'Qual dinossauro tinha placas ósseas nas costas?',          o:['T-Rex','Anquilossauro','Estegossauro','Dilofossauro'],c:2},
+      {q:'O que são fósseis?',                                       o:['Pedras comuns','Ossos e pegadas de seres antigos','Tipos de minerais','Animais vivos pequenos'],c:1},
+      {q:'O que causou a extinção dos dinossauros?',                 o:['Uma epidemia','Um meteoro gigante','Muito frio','Uma seca'],c:1},
+      {q:'Qual era o tamanho dos braços do T-Rex?',                  o:['Enormes','Médios','Pequenos e curtos','Não tinha braços'],c:2},
+      {q:'Qual é a ciência que estuda os dinossauros?',              o:['Biologia','Arqueologia','Paleontologia','Geologia'], c:2},
+      {q:'Qual dinossauro sabia "voar" com asas de pele?',           o:['Pterodáctilo','T-Rex','Velociraptor','Diplodoco'],   c:0},
+      {q:'Qual dinossauro de pescoço gigante era herbívoro?',        o:['Velociraptor','Diplodoco','T-Rex','Carnotauro'],     c:1},
+      {q:'Qual era a característica especial do Anquilossauro?',     o:['Três chifres','Corpo coberto de armadura e cauda-maça','Pescoço comprido','Asas grandes'],c:1},
+      {q:'Há quanto tempo viveram os dinossauros?',                  o:['Mil anos atrás','100 mil anos atrás','Milhões de anos atrás','No século passado'],c:2},
+      {q:'Qual animal de hoje é parente dos dinossauros?',           o:['Elefante','Baleia','Pássaros','Tubarão'],            c:2},
+    ]
+  },
+  ocean: {
+    name:'Oceano', icon:'🐠',
+    color:'linear-gradient(145deg,#e0f2fe,#fff)',
+    qs:[
+      {q:'Qual é o maior animal do oceano?',                         o:['Tubarão-baleia','Baleia-azul','Polvo-gigante','Manta'],c:1},
+      {q:'Quantos tentáculos tem um polvo comum?',                   o:['6','8','10','12'],                                   c:1},
+      {q:'Qual peixe é o mais perigoso pelo seu ataque?',            o:['Peixe-palhaço','Peixe-lanterna','Tubarão-branco','Peixe-lua'],c:2},
+      {q:'Qual animal marinho parece uma estrela?',                  o:['Água-viva','Estrela-do-mar','Coral','Caramujo'],     c:1},
+      {q:'Quantas patas tem um caranguejo?',                         o:['6','8','10','12'],                                  c:2},
+      {q:'O que as baleias precisam fazer para respirar?',           o:['Absorver oxigênio da água','Subir à superfície','Usar brânquias','Mergulhar fundo'],c:1},
+      {q:'Qual animal do mar tem tinta preta e oito braços?',        o:['Lula','Polvo','Nautilo','Camarão'],                 c:1},
+      {q:'O que é um coral?',                                        o:['Planta marinha','Ser vivo que forma recifes','Tipo de peixe','Alga grande'],c:1},
+      {q:'Qual animal marinho tem veneno nos tentáculos?',           o:['Cavalo-marinho','Peixe-palhaço','Água-viva','Tartaruga'],c:2},
+      {q:'Como os peixes respiram na água?',                         o:['Pelos pulmões','Pelas brânquias','Pela pele','Pela boca'],c:1},
+      {q:'Qual é o maior oceano do planeta?',                        o:['Atlântico','Índico','Ártico','Pacífico'],           c:3},
+      {q:'O que é um recife de coral?',                              o:['Montanha no fundo do mar','Ecossistema vivo e colorido','Tipo de navio naufragado','Planta marinha gigante'],c:1},
+      {q:'Qual animal tem uma concha em espiral e vive no mar?',     o:['Camarão','Caranguejo','Nautilo','Polvo'],           c:2},
+      {q:'Qual peixe tem veneno nas espinhas da nadadeira?',         o:['Sardinha','Peixe-pedra','Atum','Tilápia'],          c:1},
+      {q:'De que cor é o sangue do polvo?',                          o:['Vermelho','Amarelo','Azul','Verde'],                c:2},
+    ]
+  },
+  brazil: {
+    name:'Brasil', icon:'🇧🇷',
+    color:'linear-gradient(145deg,#f7fee7,#fff)',
+    qs:[
+      {q:'Qual é a capital do Brasil?',                             o:['Rio de Janeiro','São Paulo','Brasília','Salvador'],  c:2},
+      {q:'Qual é a maior cidade do Brasil?',                        o:['Brasília','Belo Horizonte','Rio de Janeiro','São Paulo'],c:3},
+      {q:'Quais são as cores da bandeira do Brasil?',               o:['Azul, branco e vermelho','Verde, amarelo e azul','Amarelo, verde e vermelho','Azul, verde e amarelo'],c:1},
+      {q:'Qual é o maior rio do Brasil?',                           o:['Rio São Francisco','Rio Paraná','Rio Amazonas','Rio Tocantins'],c:2},
+      {q:'Em que idioma os brasileiros falam?',                     o:['Espanhol','Inglês','Português','Francês'],           c:2},
+      {q:'Qual é a moeda do Brasil?',                               o:['Peso','Dólar','Euro','Real'],                       c:3},
+      {q:'Qual festa é famosa no Brasil com fantasias e samba?',    o:['Halloween','Carnaval','Festa Junina','Parada'],      c:1},
+      {q:'Em qual continente fica o Brasil?',                       o:['África','América do Norte','América do Sul','Europa'],c:2},
+      {q:'Qual é o maior estado do Brasil?',                        o:['Mato Grosso','Pará','Bahia','Amazonas'],            c:3},
+      {q:'Qual bioma famoso cobre grande parte do norte do Brasil?',o:['Pantanal','Cerrado','Caatinga','Amazônia'],         c:3},
+      {q:'Qual é o prato típico mais famoso do Brasil?',            o:['Paella','Risoto','Feijoada','Sushi'],               c:2},
+      {q:'Em que ano o Brasil foi descoberto pelos portugueses?',   o:['1492','1500','1510','1600'],                        c:1},
+      {q:'Qual esporte o Brasil é campeão do mundo várias vezes?',  o:['Basquete','Vôlei','Futebol','Tênis'],              c:2},
+      {q:'Qual famosa estátua fica no Rio de Janeiro?',             o:['Estátua da Liberdade','Torre Eiffel','Cristo Redentor','Coliseu'],c:2},
+      {q:'Quantos estados tem o Brasil?',                           o:['24','25','26','27'],                               c:3},
+    ]
+  },
+};
+
+const THEMES = Object.keys(DB);
+
+/* ═══════════════════════════════════════════
+   ESTADO
+═══════════════════════════════════════════ */
+let questions    = [];
+let idx          = 0;
+let score        = 0;
+let answered     = false;
+let activeKey    = null;
+let selectedAnswer = -1;
+let currentUser  = null;   // { sub, name, email, picture }
+let profiles     = [];     // usuários já logados (persistidos)
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  profiles = loadProfiles();
+
+  if (!GOOGLE_CLIENT_ID) {
+    document.getElementById('setupNotice').style.display = 'block';
+    renderProfileCards(); // mostra apenas quem já estava logado
+    return;
+  }
+
+  // Aguarda SDK do Google carregar
+  const tryInit = setInterval(() => {
+    if (window.google && google.accounts) {
+      clearInterval(tryInit);
+      initGoogleSignIn();
+    }
+  }, 100);
+
+  // Timeout de 5s: se SDK não carregou, mostra aviso
+  setTimeout(() => {
+    clearInterval(tryInit);
+    if (!window.google) {
+      document.getElementById('setupNotice').style.display = 'block';
+      document.getElementById('setupNotice').innerHTML =
+        '<strong>⚠️ Sem conexão com o Google</strong>Verifique sua internet ou hospede o arquivo em HTTPS para usar o login Google.';
+    }
+  }, 5000);
+
+  renderProfileCards();
+});
+
+/* ═══════════════════════════════════════════
+   GOOGLE SIGN-IN
+═══════════════════════════════════════════ */
+function initGoogleSignIn() {
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('googleSignInBtn'),
+    { theme: 'outline', size: 'large', text: 'signin_with', locale: 'pt-BR', width: 260 }
+  );
+}
+
+function handleCredentialResponse(response) {
+  const payload = parseJwt(response.credential);
+  const user = {
+    sub:     payload.sub,
+    name:    payload.name,
+    email:   payload.email,
+    picture: payload.picture || '',
+  };
+
+  // Adiciona ou atualiza perfil
+  const existing = profiles.findIndex(p => p.sub === user.sub);
+  if (existing >= 0) {
+    profiles[existing] = { ...profiles[existing], ...user }; // atualiza nome/foto
+  } else {
+    profiles.push({ ...user, records: {} });
+  }
+  saveProfiles();
+  selectUser(user.sub);
+}
+
+function parseJwt(token) {
+  const b64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(decodeURIComponent(
+    atob(b64).split('').map(c => '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')
+  ));
+}
+
+/* ═══════════════════════════════════════════
+   GERENCIAR PERFIS
+═══════════════════════════════════════════ */
+function loadProfiles() {
+  try { return JSON.parse(localStorage.getItem('quiz_profiles') || '[]'); }
+  catch { return []; }
+}
+function saveProfiles() {
+  localStorage.setItem('quiz_profiles', JSON.stringify(profiles));
+}
+
+function selectUser(sub) {
+  const p = profiles.find(x => x.sub === sub);
+  if (!p) return;
+  currentUser = p;
+  updateUserBars();
+  show('themeScreen');
+}
+
+function switchUser() {
+  currentUser = null;
+  renderProfileCards();
+  show('loginScreen');
+}
+
+function removeProfile(sub, e) {
+  e.stopPropagation();
+  profiles = profiles.filter(p => p.sub !== sub);
+  saveProfiles();
+  renderProfileCards();
+}
+
+/* ── Renderiza os cards de perfil salvo ── */
+function renderProfileCards() {
+  const wrap = document.getElementById('profilesWrap');
+  const list = document.getElementById('profilesList');
+  list.innerHTML = '';
+
+  if (profiles.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  profiles.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'profile-card';
+    card.onclick = () => selectUser(p.sub);
+
+    const avatarHTML = p.picture
+      ? `<img class="profile-avatar" src="${p.picture}" onerror="this.style.display='none';this.nextSibling.style.display='flex'" alt=""/><div class="profile-avatar-init" style="display:none">${initials(p.name)}</div>`
+      : `<div class="profile-avatar-init">${initials(p.name)}</div>`;
+
+    card.innerHTML = `
+      ${avatarHTML}
+      <span class="profile-name">${firstName(p.name)}</span>
+      <div class="profile-remove" onclick="removeProfile('${p.sub}', event)" title="Remover">✕</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* ── Atualiza barras de usuário ── */
+function updateUserBars() {
+  if (!currentUser) return;
+  ['Theme','Quiz','Result'].forEach(suffix => {
+    const avatarEl = document.getElementById(`ub${suffix.charAt(0).toLowerCase()}Avatar`);
+    const nameEl   = document.getElementById(`ub${suffix.charAt(0).toLowerCase()}Name`) ||
+                     document.getElementById(`ubr${suffix === 'Result' ? '' : ''}Name`);
+
+    // Avatar
+    if (currentUser.picture) {
+      avatarEl.innerHTML = `<img class="user-bar-avatar" src="${currentUser.picture}" onerror="this.outerHTML='<div class=\\'user-bar-avatar-init\\'>${initials(currentUser.name)}</div>'" alt=""/>`;
+    } else {
+      avatarEl.innerHTML = `<div class="user-bar-avatar-init">${initials(currentUser.name)}</div>`;
+    }
+  });
+
+  document.getElementById('ubtName').textContent = firstName(currentUser.name);
+  document.getElementById('ubqName').textContent = firstName(currentUser.name);
+  document.getElementById('ubrName').textContent = firstName(currentUser.name);
+}
+
+function initials(name) {
+  return (name || '?').split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase();
+}
+function firstName(name) {
+  return (name || '').split(' ')[0];
+}
+
+/* ═══════════════════════════════════════════
+   TELAS
+═══════════════════════════════════════════ */
+function show(id) {
+  ['loginScreen','themeScreen','loadingScreen','quizScreen','resultScreen'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+
+/* ═══════════════════════════════════════════
+   MONTAR GRADE DE TEMAS
+═══════════════════════════════════════════ */
+const grid = document.getElementById('themeGrid');
+THEMES.forEach(key => {
+  const t = DB[key];
+  const card = document.createElement('div');
+  card.className = 'theme-card';
+  card.style.background = t.color;
+  card.innerHTML = `<span class="theme-icon">${t.icon}</span><span class="theme-name">${t.name}</span>`;
+  card.onclick = () => startQuiz(key);
+  grid.appendChild(card);
+});
+
+/* ═══════════════════════════════════════════
+   EMBARALHAR
+═══════════════════════════════════════════ */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ═══════════════════════════════════════════
+   INICIAR QUIZ
+═══════════════════════════════════════════ */
+function startQuiz(key) {
+  activeKey = key;
+  document.getElementById('ldEmoji').textContent = DB[key].icon;
+  show('loadingScreen');
+
+  setTimeout(() => {
+    const pool = shuffle(DB[key].qs).slice(0, 8);
+    questions = pool.map(p => {
+      const indexed = p.o.map((text, i) => ({ text, correct: i === p.c }));
+      const shuffled = shuffle(indexed);
+      return { q: p.q, options: shuffled.map(x => x.text), correct: shuffled.findIndex(x => x.correct) };
+    });
+    idx = 0; score = 0;
+    show('quizScreen');
+    renderQ();
+  }, 600);
+}
+
+/* ═══════════════════════════════════════════
+   RENDERIZAR PERGUNTA
+═══════════════════════════════════════════ */
+function renderQ() {
+  answered = false; selectedAnswer = -1;
+  const total = questions.length;
+  const q = questions[idx];
+
+  document.getElementById('progFill').style.width = `${(idx/total)*100}%`;
+  document.getElementById('qCounter').textContent = `Pergunta ${idx+1} de ${total}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('scoreLive').textContent = `${score} ponto${score !== 1 ? 's' : ''}`;
+  document.getElementById('btnConfirm').disabled = true;
+
+  const og = document.getElementById('optsGrid');
+  og.innerHTML = '';
+  ['A','B','C','D'].forEach((label, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<b>${label})</b> ${q.options[i]}`;
+    btn.onclick = () => pick(i);
+    og.appendChild(btn);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SELECIONAR OPÇÃO
+═══════════════════════════════════════════ */
+function pick(chosen) {
+  if (answered) return;
+  selectedAnswer = chosen;
+  document.querySelectorAll('.opt-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === chosen);
+  });
+  document.getElementById('btnConfirm').disabled = false;
+}
+
+/* ═══════════════════════════════════════════
+   CONFIRMAR RESPOSTA
+═══════════════════════════════════════════ */
+function confirmAnswer() {
+  if (answered || selectedAnswer === -1) return;
+  answered = true;
+
+  const correct = questions[idx].correct;
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => { b.disabled = true; b.classList.remove('selected'); });
+  btns[correct].classList.add('correct');
+  document.getElementById('btnConfirm').disabled = true;
+
+  const ok = selectedAnswer === correct;
+  if (ok) { score++; feedback('🌟'); }
+  else    { btns[selectedAnswer].classList.add('wrong'); feedback('😅'); }
+
+  document.getElementById('scoreLive').textContent = `${score} ponto${score !== 1 ? 's' : ''}`;
+
+  setTimeout(() => {
+    idx++;
+    if (idx < questions.length) renderQ();
+    else showResult();
+  }, 1400);
+}
+
+/* ═══════════════════════════════════════════
+   FEEDBACK VISUAL
+═══════════════════════════════════════════ */
+function feedback(emoji) {
+  const ov = document.createElement('div');
+  ov.className = 'fb-overlay';
+  ov.innerHTML = `<span class="fb-emoji">${emoji}</span>`;
+  document.body.appendChild(ov);
+  setTimeout(() => ov.remove(), 700);
+}
+
+/* ═══════════════════════════════════════════
+   RESULTADO + RECORDE POR USUÁRIO
+═══════════════════════════════════════════ */
+function showResult() {
+  const total = questions.length;
+  const pct   = score / total;
+  let emoji, title, sub;
+  if (pct === 1)       { emoji='🏆'; title='Perfeito!';         sub='Você acertou tudo! Incrível! 🎊'; }
+  else if (pct >= .75) { emoji='🥇'; title='Muito bem!';        sub='Você é demais! Continue assim! 😄'; }
+  else if (pct >= .5)  { emoji='😊'; title='Bom trabalho!';     sub='Você está aprendendo muito! 💪'; }
+  else if (pct >= .25) { emoji='🙂'; title='Continue tentando!';sub='Jogue de novo e vai melhorar! 🌈'; }
+  else                  { emoji='💪'; title='Não desista!';      sub='Tente de novo, você consegue! 🚀'; }
+
+  const stars = Math.round(pct * 5);
+  document.getElementById('resEmoji').textContent = emoji;
+  document.getElementById('resTitle').textContent = title;
+  document.getElementById('resSub').textContent   = sub;
+  document.getElementById('scoreBig').textContent = `${score}/${total}`;
+  document.getElementById('scoreLbl').textContent = 'perguntas certas';
+  document.getElementById('starsRow').textContent = '⭐'.repeat(stars) + '☆'.repeat(5-stars);
+
+  // Recorde por USUÁRIO + tema
+  const chip = document.getElementById('recordChip');
+  if (currentUser) {
+    const profile = profiles.find(p => p.sub === currentUser.sub);
+    if (profile) {
+      if (!profile.records) profile.records = {};
+      const prev = profile.records[activeKey] || 0;
+      if (score > prev) {
+        profile.records[activeKey] = score;
+        saveProfiles();
+        chip.innerHTML = `<span class="record-chip">🏅 Novo recorde de ${firstName(currentUser.name)}!</span>`;
+      } else if (prev > 0) {
+        chip.innerHTML = `<span class="record-chip">🎯 Recorde de ${firstName(currentUser.name)}: ${prev}/${total}</span>`;
+      } else {
+        chip.innerHTML = '';
+      }
+    }
+  } else {
+    chip.innerHTML = '';
+  }
+
+  document.getElementById('progFill').style.width = '100%';
+  show('resultScreen');
+}
+
+/* ═══════════════════════════════════════════
+   NAVEGAÇÃO
+═══════════════════════════════════════════ */
+function restartSame() { if (activeKey) startQuiz(activeKey); }
+function goHome()       { show('themeScreen'); }
+</script>
+</body>
+</html>
