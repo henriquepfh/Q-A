@@ -149,6 +149,7 @@
     .theme-card:active { transform: scale(.94); }
     .theme-icon { font-size: 38px; display: block; margin-bottom: 5px; }
     .theme-name { font-size: 12px; font-weight: 800; color: #4a2fa0; }
+    .theme-record { font-size: 11px; color: #7c3aed; font-weight: 700; margin-top: 4px; opacity: .85; }
 
     /* ══════════════════════════════
        LOADING
@@ -359,7 +360,7 @@
 /* ═══════════════════════════════════════════════════════
    ⚙️  CONFIGURAÇÃO — cole seu Google Client ID aqui
 ═══════════════════════════════════════════════════════ */
-const GOOGLE_CLIENT_ID = '715803021513-5joahbrhj3tuj5mvlno2d076m3dhmfla.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = '715803021513-5joahbrhj3tuj5mvlno2d076m3dhmfla.apps.googleusercontent.com';
 
 /* ═══════════════════════════════════════════
    BANCO DE PERGUNTAS
@@ -739,6 +740,7 @@ function show(id) {
   ['loginScreen','themeScreen','loadingScreen','quizScreen','resultScreen'].forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
   });
+  if (id === 'themeScreen') updateThemeRecords();
 }
 
 /* ═══════════════════════════════════════════
@@ -750,10 +752,23 @@ THEMES.forEach(key => {
   const card = document.createElement('div');
   card.className = 'theme-card';
   card.style.background = t.color;
-  card.innerHTML = `<span class="theme-icon">${t.icon}</span><span class="theme-name">${t.name}</span>`;
+  card.dataset.key = key;
+  card.innerHTML = `<span class="theme-icon">${t.icon}</span><span class="theme-name">${t.name}</span><span class="theme-record" id="rec_${key}"></span>`;
   card.onclick = () => startQuiz(key);
   grid.appendChild(card);
 });
+
+function updateThemeRecords() {
+  if (!currentUser) return;
+  const profile = profiles.find(p => p.sub === currentUser.sub);
+  if (!profile || !profile.records) return;
+  THEMES.forEach(key => {
+    const el = document.getElementById(`rec_${key}`);
+    if (!el) return;
+    const rec = profile.records[key];
+    el.textContent = rec ? `🏆 ${rec.score}/8` : '';
+  });
+}
 
 /* ═══════════════════════════════════════════
    EMBARALHAR
@@ -883,19 +898,24 @@ function showResult() {
   document.getElementById('scoreLbl').textContent = 'perguntas certas';
   document.getElementById('starsRow').textContent = '⭐'.repeat(stars) + '☆'.repeat(5-stars);
 
-  // Recorde por USUÁRIO + tema
+  // Recorde por USUÁRIO + tema (com data e horário)
   const chip = document.getElementById('recordChip');
   if (currentUser) {
     const profile = profiles.find(p => p.sub === currentUser.sub);
     if (profile) {
       if (!profile.records) profile.records = {};
-      const prev = profile.records[activeKey] || 0;
-      if (score > prev) {
-        profile.records[activeKey] = score;
+      const prev = profile.records[activeKey];
+      const prevScore = prev ? prev.score : 0;
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      if (score > prevScore) {
+        profile.records[activeKey] = { score, date: dateStr, time: timeStr };
         saveProfiles();
-        chip.innerHTML = `<span class="record-chip">🏅 Novo recorde de ${firstName(currentUser.name)}!</span>`;
-      } else if (prev > 0) {
-        chip.innerHTML = `<span class="record-chip">🎯 Recorde de ${firstName(currentUser.name)}: ${prev}/${total}</span>`;
+        chip.innerHTML = `<span class="record-chip">🏅 Novo recorde! &nbsp;·&nbsp; ${dateStr} às ${timeStr}</span>`;
+      } else if (prev) {
+        chip.innerHTML = `<span class="record-chip">🎯 Recorde: ${prev.score}/${total} &nbsp;·&nbsp; ${prev.date} às ${prev.time}</span>`;
       } else {
         chip.innerHTML = '';
       }
